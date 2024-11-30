@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.11.9, pytest-8.3.2, pluggy-1.5.0 -- /Library/Frameworks/Python.framework/Versions/3.11/bin/python3
+cachedir: .pytest_cache
+hypothesis profile 'default' -> database=DirectoryBasedExampleDatabase('/Users/stephen/Desktop/Classes2024/MLE/mod4-stephendongg/.hypothesis/examples')
+rootdir: /Users/stephen/Desktop/Classes2024/MLE/mod4-stephendongg
+configfile: pyproject.toml
+plugins: hypothesis-6.54.0, env-1.1.3, anyio-4.6.2.post1
+collecting ... collected 66 items / 61 deselected / 5 selected
+
+tests/test_nn.py::test_max PASSED                                        [ 20%]
+tests/test_nn.py::test_max_pool PASSED                                   [ 40%]
+tests/test_nn.py::test_drop PASSED                                       [ 60%]
+tests/test_nn.py::test_softmax PASSED                                    [ 80%]
+tests/test_nn.py::test_log_softmax PASSED                                [100%]
+
+======================= 5 passed, 61 deselected in 4.62s =======================
