@@ -3,7 +3,6 @@ import pytest
 from hypothesis import given
 import minitorch 
 from minitorch.tensor import Tensor
-from minitorch import conv1d_cuda, conv2d_cuda
 import torch
 import numpy as np
 from .strategies import assert_close
