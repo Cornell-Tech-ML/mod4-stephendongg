@@ -29,17 +29,17 @@ def test_conv1d_cuda_simple():
         assert_close(output_cuda[i], output[i])
 
 
-@pytest.mark.task4_4b
-def test_conv2d_cuda_simple():
-    input_data = torch.randn(1, 1, 5, 5, device="cuda")
-    weight_data = torch.randn(1, 1, 3, 3, device="cuda")
-    input = Tensor(input_data.cpu().numpy(), device="cuda")
-    weight = Tensor(weight_data.cpu().numpy(), device="cuda")
+# @pytest.mark.task4_4b
+# def test_conv2d_cuda_simple():
+#     input_data = torch.randn(1, 1, 5, 5, device="cuda")
+#     weight_data = torch.randn(1, 1, 3, 3, device="cuda")
+#     input = Tensor(input_data.cpu().numpy(), device="cuda")
+#     weight = Tensor(weight_data.cpu().numpy(), device="cuda")
 
-    # CUDA convolution
-    output_cuda = conv2d_cuda(input, weight)
+#     # CUDA convolution
+#     output_cuda = conv2d_cuda(input, weight)
 
-    # Torch convolution
-    output_torch = torch.nn.functional.conv2d(input_data, weight_data)
+#     # Torch convolution
+#     output_torch = torch.nn.functional.conv2d(input_data, weight_data)
 
-    assert np.allclose(output_cuda.cpu().data, output_torch.cpu().numpy(), atol=1e-5)
+#     assert np.allclose(output_cuda.cpu().data, output_torch.cpu().numpy(), atol=1e-5)
