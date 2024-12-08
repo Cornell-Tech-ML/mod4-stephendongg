@@ -6,6 +6,7 @@ mndata = MNIST("project/data/")
 images, labels = mndata.load_training()
 
 BACKEND = minitorch.TensorBackend(minitorch.FastOps)
+
 BATCH = 16
 
 # Number of classes (10 digits)
@@ -41,8 +42,8 @@ class Conv2d(minitorch.Module):
         self.bias = RParam(out_channels, 1, 1)
 
     def forward(self, input):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv2d(input, self.weights.value) + self.bias.value
+
 
 
 class Network(minitorch.Module):
@@ -67,12 +68,26 @@ class Network(minitorch.Module):
         self.mid = None
         self.out = None
 
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        self.conv1 = Conv2d(1, 4, 3, 3)
+        self.conv2 = Conv2d(4, 8, 3, 3)
+
+        self.fc1 = Linear(392, 64)
+        self.fc2 = Linear(64, C)
+
+        self.dropout_rate = 0.25
 
     def forward(self, x):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+
+        self.mid = self.conv1(x).relu()
+        self.out = self.conv2(self.mid).relu()
+
+        x = minitorch.maxpool2d(self.out, [4, 4])
+        x = x.view(BATCH, 392)
+
+        x = self.fc1(x).relu()
+        x = minitorch.dropout(x, self.dropout_rate, ignore = not self.training)
+        x = self.fc2(x)
+        return minitorch.logsoftmax(x, 1)
 
 
 def make_mnist(start, stop):
@@ -87,8 +102,8 @@ def make_mnist(start, stop):
     return X, ys
 
 
-def default_log_fn(epoch, total_loss, correct, total, losses, model):
-    print(f"Epoch {epoch} loss {total_loss} valid acc {correct}/{total}")
+def default_log_fn(epoch, total_loss, correct, total, train_correct, losses, model):
+    print(f"Epoch {epoch} loss {total_loss} train acc {train_correct}/{total} valid acc {correct}/{total}")
 
 
 class ImageTrain:
@@ -99,7 +114,7 @@ class ImageTrain:
         return self.model.forward(minitorch.tensor([x], backend=BACKEND))
 
     def train(
-        self, data_train, data_val, learning_rate, max_epochs=500, log_fn=default_log_fn
+        self, data_train, data_val, learning_rate, max_epochs=100, log_fn=default_log_fn
     ):
         (X_train, y_train) = data_train
         (X_val, y_val) = data_val
@@ -125,16 +140,29 @@ class ImageTrain:
                 )
                 x.requires_grad_(True)
                 y.requires_grad_(True)
+
                 # Forward
                 out = model.forward(x.view(BATCH, 1, H, W)).view(BATCH, C)
                 prob = (out * y).sum(1)
                 loss = -(prob / y.shape[0]).sum()
+                training_correct = 0
+                for i in range(BATCH):
+                    m = -1000
+                    ind = -1
+                    for j in range(C):
+                        if out[i, j] > m:
+                            ind = j
+                            m = out[i, j]
+                    if y[i, ind] == 1.0:
+                        training_correct += 1
+
 
                 assert loss.backend == BACKEND
                 loss.view(1).backward()
 
                 total_loss += loss[0]
                 losses.append(total_loss)
+
 
                 # Update
                 optim.step()
@@ -163,7 +191,7 @@ class ImageTrain:
                                     m = out[i, j]
                             if y[i, ind] == 1.0:
                                 correct += 1
-                    log_fn(epoch, total_loss, correct, BATCH, losses, model)
+                    log_fn(epoch, total_loss, correct, BATCH, training_correct, losses, model)
 
                     total_loss = 0.0
                     model.train()

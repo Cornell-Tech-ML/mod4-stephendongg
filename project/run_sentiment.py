@@ -5,6 +5,7 @@ import embeddings
 import minitorch
 from datasets import load_dataset
 
+
 BACKEND = minitorch.TensorBackend(minitorch.FastOps)
 
 
@@ -34,9 +35,7 @@ class Conv1d(minitorch.Module):
         self.bias = RParam(1, out_channels, 1)
 
     def forward(self, input):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
-
+        return minitorch.conv1d(input, self.weights.value) + self.bias.value
 
 class CNNSentimentKim(minitorch.Module):
     """
@@ -61,16 +60,40 @@ class CNNSentimentKim(minitorch.Module):
     ):
         super().__init__()
         self.feature_map_size = feature_map_size
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        self.embedding_size = embedding_size
+        self.dropout_rate = dropout
+
+        self.embedding_size = embedding_size
+        self.dropout_rate = dropout
+        self.layer1 = Conv1d(embedding_size, feature_map_size, filter_sizes[0])
+        self.layer2 = Conv1d(embedding_size, feature_map_size, filter_sizes[1])
+        self.layer3 = Conv1d(embedding_size, feature_map_size, filter_sizes[2])
+
+        self.fc = Linear(feature_map_size, 1)
+        self.pool = lambda x: minitorch.max(x, dim=2)
 
     def forward(self, embeddings):
         """
         embeddings tensor: [batch x sentence length x embedding dim]
         """
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        embeddings = embeddings.permute(0, 2, 1)
+        middle1 = self.layer1(embeddings).relu() # [batch x feature_map_size x sentence length]
+        middle2 = self.layer2(embeddings).relu() # [batch x feature_map_size x sentence length]
+        middle3 = self.layer3(embeddings).relu() # [batch x feature_map_size x sentence length]
 
+        # apply max_over_time pooling
+        pool1_out = self.pool(middle1) # [batch x feature_map_size x sentence length]
+        pool2_out = self.pool(middle2) # [batch x feature_map_size x sentence length]
+        pool3_out = self.pool(middle3) # [batch x feature_map_size x sentence length]
+
+        combined = pool1_out + pool2_out + pool3_out
+        combined = combined.view(embeddings.shape[0], self.feature_map_size)
+        dropped = minitorch.dropout(combined, self.dropout_rate, ignore = not self.training)
+
+        fc_out = self.fc.forward(dropped)
+        output = fc_out.sigmoid().view(embeddings.shape[0])
+
+        return output
 
 # Evaluation helper methods
 def get_predictions_array(y_true, model_output):
@@ -83,7 +106,6 @@ def get_predictions_array(y_true, model_output):
             predicted_label = 0
         predictions_array.append((true_label, predicted_label, logit))
     return predictions_array
-
 
 def get_accuracy(predictions_array):
     correct = 0
@@ -251,7 +273,6 @@ def encode_sentiment_data(dataset, pretrained_embeddings, N_train, N_val=0):
 
     return (X_train, y_train), (X_val, y_val)
 
-
 if __name__ == "__main__":
     train_size = 450
     validation_size = 100
@@ -260,6 +281,7 @@ if __name__ == "__main__":
 
     (X_train, y_train), (X_val, y_val) = encode_sentiment_data(
         load_dataset("glue", "sst2"),
+        # glove_embeddings,
         embeddings.GloveEmbedding("wikipedia_gigaword", d_emb=50, show_progress=True),
         train_size,
         validation_size,
