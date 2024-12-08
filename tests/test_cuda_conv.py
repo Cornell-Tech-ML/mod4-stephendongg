@@ -20,7 +20,7 @@ def test_conv1d_cuda_simple():
     input = minitorch.tensor(input_data, backend=cuda_backend)
     weight = minitorch.tensor(weight_data, backend=cuda_backend)
     
-    output_cuda = conv1d_cuda(input, weight)
+    output_cuda = minitorch.Conv1dCudaFun.apply(input, weight)
 
     # Torch convolution
     output = minitorch.Conv1dFun.apply(input, weight)

@@ -162,7 +162,95 @@ def _tensor_conv1d(
         )
         out[out_pos] = value
 
-conv1_cuda = jit(_tensor_conv1d)
+tensor_conv1d = jit(_tensor_conv1d)
+class Conv1dCudaFun(Function):
+    @staticmethod
+    def forward(ctx: Context, input: Tensor, weight: Tensor) -> Tensor:
+        """
+        Compute the forward pass of a 1D convolution.
+
+        Args:
+            ctx (Context): The context to save values for backpropagation.
+            input (Tensor): Input tensor of shape (batch, in_channels, width).
+            weight (Tensor): Weight tensor of shape (out_channels, in_channels, kernel_width).
+
+        Returns:
+            Tensor: The output tensor of shape (batch, out_channels, width).
+        """
+        # Save input and weight for the backward pass
+        ctx.save_for_backward(input, weight)
+
+        # Extract tensor shapes
+        batch, in_channels, width = input.shape
+        out_channels, in_channels2, kernel_width = weight.shape
+        assert in_channels == in_channels2
+
+        # Output tensor shape (assume no padding or stride)
+        output = input.zeros((batch, out_channels, width))
+
+        # Run the CUDA 1D convolution kernel
+        tensor_conv1d(
+            output.data, output.shape, output.strides, output.size,
+            input.data, input.shape, input.strides,
+            weight.data, weight.shape, weight.strides,
+            False,  # Reverse flag
+        )
+
+        return output
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """
+        Compute the backward pass of 1D convolution.
+
+        Args:
+            ctx (Context): The context containing saved information for backpropagation.
+            grad_output (Tensor): The gradient of the output tensor.
+
+        Returns:
+            Tuple[Tensor, Tensor]: Gradients of the input tensor and weight tensor.
+        """
+        # Retrieve saved input and weight tensors
+        input, weight = ctx.saved_values
+
+        # Extract tensor shapes
+        batch, in_channels, width = input.shape
+        out_channels, in_channels2, kernel_width = weight.shape
+        assert in_channels == in_channels2
+
+        # Compute gradients for the weight
+        grad_weight = weight.zeros(weight.shape)
+        new_input = input.permute(1, 0, 2)  # Rearrange dimensions for compatibility
+        new_grad_output = grad_output.permute(1, 0, 2)  # Rearrange dimensions
+
+        # Convolve input and grad_output to compute grad_weight
+        tensor_conv1d(
+            grad_weight.data, grad_weight.shape, grad_weight.strides, grad_weight.size,
+            new_input.data, new_input.shape, new_input.strides,
+            new_grad_output.data, new_grad_output.shape, new_grad_output.strides,
+            False,
+        )
+        grad_weight = grad_weight.permute(1, 0, 2)  # Rearrange dimensions back
+
+        # Compute gradients for the input
+        grad_input = input.zeros(input.shape)
+        new_weight = weight.permute(1, 0, 2)  # Rearrange dimensions for compatibility
+
+        # Convolve grad_output and weight to compute grad_input
+        tensor_conv1d(
+            grad_input.data, grad_input.shape, grad_input.strides, grad_input.size,
+            grad_output.data, grad_output.shape, grad_output.strides,
+            new_weight.data, new_weight.shape, new_weight.strides,
+            True,  # Reverse flag for gradient computation
+        )
+
+        return grad_input, grad_weight
+
+
+# Apply the function
+conv1d = Conv1dCudaFun.apply
+
+
 
 
 # def _tensor_conv2d(
