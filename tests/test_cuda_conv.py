@@ -2,7 +2,7 @@
 import pytest
 from hypothesis import given
 from minitorch.tensor import Tensor
-from cuda_conv import conv1d_cuda, conv2d_cuda
+from minitorch.cuda_conv import conv1d_cuda, conv2d_cuda
 import torch
 import numpy as np
 
