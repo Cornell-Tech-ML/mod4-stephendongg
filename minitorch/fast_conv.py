@@ -166,6 +166,9 @@ class Conv1dFun(Function):
 
         """
         input, weight = ctx.saved_values
+        
+        input = input.reshape(1, 1, -1)  # Reshape to (batch=1, in_channels=1, width=input.size)
+
         batch, in_channels, w = input.shape
         out_channels, in_channels, kw = weight.shape
         grad_weight = grad_output.zeros((in_channels, out_channels, kw))
