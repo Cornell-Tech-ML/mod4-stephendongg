@@ -161,8 +161,8 @@ def _tensor_conv1d(
             + col * out_strides[-1]
         )
         out[out_pos] = value
-        
-tensor_conv1d = jit(_tensor_conv1d)
+
+conv1_cuda = jit(_tensor_conv1d)
 
 
 # def _tensor_conv2d(
