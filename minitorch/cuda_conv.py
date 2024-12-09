@@ -192,7 +192,7 @@ class Conv1dCudaFun(Function):
 
         # Run the CUDA 1D convolution kernel
         tensor_conv1d(
-            output._tensor._storage, output.shape, output.strides._tensor._strides, output.size,
+            output._tensor._storage, output.shape, output._tensor._strides, output.size,
             input._tensor._storage, input.shape, input._tensor._strides,
             weight._tensor._storage, weight.shape, weight._tensor._strides,
             False,  # Reverse flag
