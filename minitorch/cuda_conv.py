@@ -188,11 +188,12 @@ class Conv1dCudaFun(Function):
         # Output tensor shape (assume no padding or stride)
         output = input.zeros((batch, out_channels, width))
 
+
         # Run the CUDA 1D convolution kernel
         tensor_conv1d(
-            output.data, output.shape, output.strides, output.size,
-            input.data, input.shape, input.strides,
-            weight.data, weight.shape, weight.strides,
+            output.storage, output.shape, output.strides, output.size,
+            input.storage, input.shape, input.strides,
+            weight.storage, weight.shape, weight.strides,
             False,  # Reverse flag
         )
 
