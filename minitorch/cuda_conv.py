@@ -190,8 +190,14 @@ class Conv1dCudaFun(Function):
         output = output.contiguous()
 
 
+        # TODO: Define threads per block and blocks per grid. 
+        threadsperblock = 128  # Common choice, depends on GPU
+        blockspergrid = (output.size + threadsperblock - 1) // threadsperblock
+
+
+        
         # Run the CUDA 1D convolution kernel
-        tensor_conv1d(
+        tensor_conv1d[threadsperblock, blockspergrid](
             output._tensor._storage, output.shape, output._tensor._strides, output.size,
             input._tensor._storage, input.shape, input._tensor._strides,
             weight._tensor._storage, weight.shape, weight._tensor._strides,
