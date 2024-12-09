@@ -189,9 +189,9 @@ class Conv1dCudaFun(Function):
         output = input.zeros((batch, out_channels, width))
         output = output.contiguous()
 
-        input = input.to_cuda()
-        weight = weight.to_cuda()
-        output = output.to_cuda()
+        input = input._tensor.to_cuda()
+        weight = weight._tensor.to_cuda()
+        output = output._tensor.to_cuda()
 
 
         # TODO: Define threads per block and blocks per grid. 
