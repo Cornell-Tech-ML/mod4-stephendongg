@@ -187,6 +187,7 @@ class Conv1dCudaFun(Function):
 
         # Output tensor shape (assume no padding or stride)
         output = input.zeros((batch, out_channels, width))
+        output = output.contiguous()
 
 
         # Run the CUDA 1D convolution kernel
