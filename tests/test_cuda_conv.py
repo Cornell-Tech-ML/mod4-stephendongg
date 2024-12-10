@@ -52,7 +52,7 @@ def test_conv1d_cuda_simple():
 
 
     for i in range(output_cuda.size):
-        assert_close(output_cuda[i], output[i])
+        assert_close(output_cuda._tensor._storage[i], output._tensor._storage[i])
 
 
 # @pytest.mark.task4_4b
