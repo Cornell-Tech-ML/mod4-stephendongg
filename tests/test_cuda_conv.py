@@ -66,7 +66,7 @@ def test_conv1d_zero_weight_cuda_simple():
     for i in range(output_cuda.size):
         assert_close(output_cuda._tensor._storage[i], output_simple._tensor._storage[i])
 
-
+@pytest.mark.task4_4b
 @pytest.mark.parametrize(
     "input_data, weight_data, expected",
     [
@@ -82,6 +82,8 @@ def test_conv1d_zero_weight_cuda_simple():
         ([10, 20, 30, 40], [1, 2, 3], [140, 200]),  # Larger inputs
     ],
 )
+
+@pytest.mark.task4_4b
 def test_conv1d_cuda_cases(input_data: list[int], weight_data: list[int], expected: list[int]):
     """Parameterized test for 1D convolution comparing CUDA and Simple backends."""
     input_cuda = Tensor.make(np.array(input_data), (1, 1, len(input_data)), backend=cuda_backend)
@@ -100,6 +102,20 @@ def test_conv1d_cuda_cases(input_data: list[int], weight_data: list[int], expect
 
     # Optional: Assert expected output (if deterministic)
     assert list(output_cuda._tensor._storage) == expected
+
+
+@pytest.mark.task4_4b
+def test_conv1d_simple_cuda() -> None:
+    """Simple deterministic test for CUDA 1D convolution."""
+    t = minitorch.tensor([0, 1, 2, 3], backend=cuda_backend).view(1, 1, 4)
+    t.requires_grad_(True)
+    t2 = minitorch.tensor([[1, 2, 3]], backend=cuda_backend).view(1, 1, 3)
+    out = minitorch.Conv1dCudaFun.apply(t, t2)
+
+    assert out[0, 0, 0] == 0 * 1 + 1 * 2 + 2 * 3
+    assert out[0, 0, 1] == 1 * 1 + 2 * 2 + 3 * 3
+    assert out[0, 0, 2] == 2 * 1 + 3 * 2
+    assert out[0, 0, 3] == 3 * 1
 
 
 # @pytest.mark.task4_4b
