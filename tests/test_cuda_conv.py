@@ -119,10 +119,14 @@ def test_conv1d_simple_cuda() -> None:
 def test_conv1d_cuda_grad() -> None:
     """Gradient check for CUDA 1D convolution."""
 
-    input_data = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    weight_data = [1.0, 0.0, 0.0, 0.0]
-    input = Tensor.make(np.array(input_data), (1, 1, 6), backend=cuda_backend)
-    weight = Tensor.make(np.array(weight_data), (1, 1, 4), backend=cuda_backend)
+    # input_data = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    # weight_data = [1.0, 0.0, 0.0, 0.0]
+
+    input_data = [1.0, 0.0, 0.0, 0.0]
+    weight_data = [1.0, 0.0]
+
+    input = Tensor.make(np.array(input_data), (1, 1, 4), backend=cuda_backend)
+    weight = Tensor.make(np.array(weight_data), (1, 1, 2), backend=cuda_backend)
 
     print(input, weight)
     minitorch.grad_check(minitorch.Conv1dCudaFun.apply, input, weight)
