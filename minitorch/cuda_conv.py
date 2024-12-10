@@ -210,6 +210,7 @@ class Conv1dCudaFun(Function):
             weight._tensor._storage, weight.shape, weight._tensor._strides,
             False,
         )
+        print("APPLIED?")
 
         return output
 
