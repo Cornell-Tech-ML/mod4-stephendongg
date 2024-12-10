@@ -169,8 +169,9 @@ def _tensor_conv1d(
 
         if row < out_shape[-2] and col < out_shape[-1]:
             print("4.4 output values")
-            print(f"Final Output Value [row: {row}, col: {col}] = {value}")
-        out[out_pos] = value
+            print("Final Output Value row:", row, "col:", col, "value:", value)
+
+            out[out_pos] = value
 
 tensor_conv1d = jit(_tensor_conv1d)
 class Conv1dCudaFun(Function):
