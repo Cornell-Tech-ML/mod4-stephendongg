@@ -97,6 +97,12 @@ def _tensor_conv1d(
         weight_strides: Strides for the weight tensor.
         reverse: Whether to reverse the kernel.
     """
+    
+    if cuda.threadIdx.x == 0 and cuda.blockIdx.x == 0:  # Only one thread prints
+        print("4.1: thread and block information ")
+        print("Thread ID:", cuda.threadIdx.x, cuda.threadIdx.y)
+        print("Block ID:", cuda.blockIdx.x, cuda.blockIdx.y, cuda.blockIdx.z)
+
     # Block size for shared memory
     BLOCK_DIM = 32
 
@@ -122,6 +128,7 @@ def _tensor_conv1d(
 
     # Loop through tiles of the kernel
     for tile in range((weight_shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM):
+       
         # Load a tile of the input into shared memory
         if row < input_shape[-2] and (tile * BLOCK_DIM + thread_y) < input_shape[-1]:
             shared_input[thread_x, thread_y] = input[
@@ -159,6 +166,10 @@ def _tensor_conv1d(
             + row * out_strides[-2]
             + col * out_strides[-1]
         )
+
+        if row < out_shape[-2] and col < out_shape[-1]:
+            print("4.4 output values")
+            print(f"Final Output Value [row: {row}, col: {col}] = {value}")
         out[out_pos] = value
 
 tensor_conv1d = jit(_tensor_conv1d)
