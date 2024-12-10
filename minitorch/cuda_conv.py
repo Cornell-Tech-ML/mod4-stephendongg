@@ -70,92 +70,145 @@ broadcast_index = device_jit(broadcast_index)
 THREADS_PER_BLOCK = 16
 
 
+# @cuda.jit
+# def _tensor_conv1d(
+#     out: Storage, out_shape: Shape, out_strides: Strides, out_size: int,
+#     input: Storage, input_shape: Shape, input_strides: Strides, 
+#     weight: Storage, weight_shape: Shape, weight_strides: Strides,
+#     reverse: bool,
+# ) -> None:
+#     """
+#     CUDA 1D Convolution kernel.
+
+#     Args:
+#         out: Output tensor storage.
+#         out_shape: Shape of the output tensor.
+#         out_strides: Strides for the output tensor.
+#         out_size: Total size of the output tensor.
+#         input: Input tensor storage.
+#         input_shape: Shape of the input tensor.
+#         input_strides: Strides for the input tensor.
+#         weight: Storage for the weight tensor.
+#         weight_shape: Shape of the weight tensor.
+#         weight_strides: Strides for the weight tensor.
+#         reverse: Whether to reverse the kernel.
+#     """
+#     # Block size for shared memory
+#     BLOCK_DIM = 32
+
+#     # Shared memory for input and weight tiles
+#     shared_input = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float32)
+#     shared_weight = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float32)
+
+#     # Thread and block indices
+#     batch_idx = cuda.blockIdx.z
+#     row = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+#     col = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+
+#     # Local thread indices within the block
+#     thread_x = cuda.threadIdx.x
+#     thread_y = cuda.threadIdx.y
+
+#     # Accumulator for the convolution result
+#     value = 0.0
+
+#     # Batch stride for input and weights
+#     input_batch_stride = input_strides[0] if input_shape[0] > 1 else 0
+#     weight_batch_stride = weight_strides[0] if weight_shape[0] > 1 else 0
+
+#     # Loop through tiles of the kernel
+#     for tile in range((weight_shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM):
+#         # Load a tile of the input into shared memory
+#         if row < input_shape[-2] and (tile * BLOCK_DIM + thread_y) < input_shape[-1]:
+#             shared_input[thread_x, thread_y] = input[
+#                 batch_idx * input_batch_stride
+#                 + row * input_strides[-2]
+#                 + (tile * BLOCK_DIM + thread_y) * input_strides[-1]
+#             ]
+#         else:
+#             shared_input[thread_x, thread_y] = 0.0
+
+#         # Load a tile of the weight into shared memory
+#         if tile * BLOCK_DIM + thread_x < weight_shape[-2] and col < weight_shape[-1]:
+#             shared_weight[thread_x, thread_y] = weight[
+#                 batch_idx * weight_batch_stride
+#                 + (tile * BLOCK_DIM + thread_x) * weight_strides[-2]
+#                 + col * weight_strides[-1]
+#             ]
+#         else:
+#             shared_weight[thread_x, thread_y] = 0.0
+
+#         # Synchronize threads to ensure tiles are loaded
+#         cuda.syncthreads()
+
+#         # Compute convolution for this tile
+#         for k in range(BLOCK_DIM):
+#             value += shared_input[thread_x, k] * shared_weight[k, thread_y]
+
+#         # Synchronize threads before loading the next tile
+#         cuda.syncthreads()
+
+#     # Write the computed value back to the global output tensor
+#     if row < out_shape[-2] and col < out_shape[-1]:
+#         out_pos = (
+#             batch_idx * out_strides[0]
+#             + row * out_strides[-2]
+#             + col * out_strides[-1]
+#         )
+#         out[out_pos] = value
+
 @cuda.jit
 def _tensor_conv1d(
-    out: Storage, out_shape: Shape, out_strides: Strides, out_size: int,
-    input: Storage, input_shape: Shape, input_strides: Strides, 
-    weight: Storage, weight_shape: Shape, weight_strides: Strides,
+    out: Storage,
+    out_shape: Shape,
+    out_strides: Strides,
+    out_size: int,
+    input: Storage,
+    input_shape: Shape,
+    input_strides: Strides,
+    weight: Storage,
+    weight_shape: Shape,
+    weight_strides: Strides,
     reverse: bool,
 ) -> None:
-    """
-    CUDA 1D Convolution kernel.
+    """CUDA 1D Convolution kernel with same padding."""
+    # Thread index
+    tid = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
 
-    Args:
-        out: Output tensor storage.
-        out_shape: Shape of the output tensor.
-        out_strides: Strides for the output tensor.
-        out_size: Total size of the output tensor.
-        input: Input tensor storage.
-        input_shape: Shape of the input tensor.
-        input_strides: Strides for the input tensor.
-        weight: Storage for the weight tensor.
-        weight_shape: Shape of the weight tensor.
-        weight_strides: Strides for the weight tensor.
-        reverse: Whether to reverse the kernel.
-    """
-    # Block size for shared memory
-    BLOCK_DIM = 32
+    # Ensure thread is within bounds
+    if tid >= out_size:
+        return
 
-    # Shared memory for input and weight tiles
-    shared_input = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float32)
-    shared_weight = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float32)
+    # Map 1D thread ID to multi-dimensional index for `out`
+    out_idx = cuda.local.array(3, numba.int32)  # Assuming output is (batch, out_channels, width)
+    to_index(tid, out_shape, out_idx)
 
-    # Thread and block indices
-    batch_idx = cuda.blockIdx.z
-    row = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    col = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+    # Extract batch, channel, and spatial indices
+    b, oc, ow = out_idx[0], out_idx[1], out_idx[2]
 
-    # Local thread indices within the block
-    thread_x = cuda.threadIdx.x
-    thread_y = cuda.threadIdx.y
+    # Compute output value for this thread
+    out_value = 0.0
+    for ic in range(input_shape[1]):  # Iterate over input channels
+        for kw in range(weight_shape[2]):  # Iterate over kernel width
+            # Compute input position
+            iw = ow - kw if reverse else ow + kw - (weight_shape[2] // 2)
+            if 0 <= iw < input_shape[2]:  # Ensure valid index
+                input_idx = (
+                    b * input_strides[0]
+                    + ic * input_strides[1]
+                    + iw * input_strides[2]
+                )
+                weight_idx = (
+                    oc * weight_strides[0]
+                    + ic * weight_strides[1]
+                    + kw * weight_strides[2]
+                )
+                out_value += input[input_idx] * weight[weight_idx]
 
-    # Accumulator for the convolution result
-    value = 0.0
+    # Write result to output
+    out_pos = index_to_position(out_idx, out_strides)
+    out[out_pos] = out_value
 
-    # Batch stride for input and weights
-    input_batch_stride = input_strides[0] if input_shape[0] > 1 else 0
-    weight_batch_stride = weight_strides[0] if weight_shape[0] > 1 else 0
-
-    # Loop through tiles of the kernel
-    for tile in range((weight_shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM):
-        # Load a tile of the input into shared memory
-        if row < input_shape[-2] and (tile * BLOCK_DIM + thread_y) < input_shape[-1]:
-            shared_input[thread_x, thread_y] = input[
-                batch_idx * input_batch_stride
-                + row * input_strides[-2]
-                + (tile * BLOCK_DIM + thread_y) * input_strides[-1]
-            ]
-        else:
-            shared_input[thread_x, thread_y] = 0.0
-
-        # Load a tile of the weight into shared memory
-        if tile * BLOCK_DIM + thread_x < weight_shape[-2] and col < weight_shape[-1]:
-            shared_weight[thread_x, thread_y] = weight[
-                batch_idx * weight_batch_stride
-                + (tile * BLOCK_DIM + thread_x) * weight_strides[-2]
-                + col * weight_strides[-1]
-            ]
-        else:
-            shared_weight[thread_x, thread_y] = 0.0
-
-        # Synchronize threads to ensure tiles are loaded
-        cuda.syncthreads()
-
-        # Compute convolution for this tile
-        for k in range(BLOCK_DIM):
-            value += shared_input[thread_x, k] * shared_weight[k, thread_y]
-
-        # Synchronize threads before loading the next tile
-        cuda.syncthreads()
-
-    # Write the computed value back to the global output tensor
-    if row < out_shape[-2] and col < out_shape[-1]:
-        out_pos = (
-            batch_idx * out_strides[0]
-            + row * out_strides[-2]
-            + col * out_strides[-1]
-        )
-        out[out_pos] = value
 
 tensor_conv1d = jit(_tensor_conv1d)
 class Conv1dCudaFun(Function):
