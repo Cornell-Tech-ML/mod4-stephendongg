@@ -13,10 +13,10 @@ cuda_backend = minitorch.TensorBackend(minitorch.CudaOps)
 @pytest.mark.task4_4b
 def test_conv1d_cuda_simple():
 
-    input_data = [1, 1, 6]
+    input_data = [1, 1, 1, 1]
     weight_data = [1, 1, 4]
-
-    input = minitorch.tensor(input_data, backend=cuda_backend).view(1, 1, 3)
+    
+    input = minitorch.tensor(input_data, backend=cuda_backend).view(1, 1, 4)
     weight = minitorch.tensor(weight_data, backend=cuda_backend).view(1, 1, 3)
 
 
