@@ -303,8 +303,11 @@ class Conv1dCudaFun(Function):
         # print("2: Final Checks")
         # print("Output Tensor Before Kernel:")
         # print(output._storage)
+
+        out = Tensor.make(output.tuple()[0], tuple(output.tuple()[1]), tuple(output.tuple()[2]), backend=cuda_backend)
+
         tensor_conv1d[blockspergrid, threadsperblock](
-            output.tuple()[0], output.tuple()[1], output.tuple()[2], width,
+            out.tuple()[0], out.tuple()[1], out.tuple()[2], width,
             input._tensor._storage, input.shape, input._tensor._strides,
             weight._tensor._storage, weight.shape, weight._tensor._strides,
             False,
@@ -324,8 +327,7 @@ class Conv1dCudaFun(Function):
         # print("Weight Tensor Storage:")
         # print(weight._tensor._storage)
 
-        ret = Tensor.make(output.tuple()[0], tuple(output.tuple()[1]), tuple(output.tuple()[2]), backend=cuda_backend)
-        return ret
+        return out
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
