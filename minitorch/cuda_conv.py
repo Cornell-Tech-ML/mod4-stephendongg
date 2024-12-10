@@ -257,10 +257,9 @@ class Conv1dCudaFun(Function):
 
         # Convolve input and grad_output to compute grad_weight
         tensor_conv1d[blockspergrid, threadsperblock](
-            *grad_weight.tuple(),
-            grad_weight.size,
-            *new_input.tuple(),
-            *new_grad_output.tuple(),
+            grad_weight.tuple()[0], grad_weight.tuple()[1], grad_weight.tuple()[2], grad_weight.size,
+            new_input._tensor._storage, new_input._tensor.shape, new_input._tensor.strides,
+            new_grad_output._tensor._storage, new_grad_output._tensor._shape, new_grad_output._tensor.strides,
             False,
         )
         grad_weight = grad_weight.permute(1, 0, 2)  # Rearrange dimensions back
@@ -274,10 +273,10 @@ class Conv1dCudaFun(Function):
         
         # Convolve grad_output and weight to compute grad_input
         tensor_conv1d[blockspergrid, threadsperblock](
-            *grad_input.tuple(),
-            grad_input.size,
-            *grad_output.tuple(),
-            *new_weight.tuple(),
+            grad_input.tuple()[0], grad_input.tuple()[1], grad_input.tuple()[2], grad_input.size,
+            grad_output.data, grad_output.shape, grad_output.strides,
+            new_weight.data, new_weight.shape, new_weight.strides,
+            True,  # Reverse flag for gradient computation
         )
 
         return grad_input, grad_weight
