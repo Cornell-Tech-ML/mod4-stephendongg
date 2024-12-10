@@ -115,7 +115,7 @@ def test_conv1d_simple_cuda() -> None:
     tensors(shape=(1, 1, 6), backend=cuda_backend),
     tensors(shape=(1, 1, 4), backend=cuda_backend),
 )
-def test_conv1d_cuda(input: Tensor, weight: Tensor) -> None:
+def test_conv1d_cuda_grad(input: Tensor, weight: Tensor) -> None:
     """Gradient check for CUDA 1D convolution."""
     print(input, weight)
     minitorch.grad_check(minitorch.Conv1dCudaFun.apply, input, weight)
@@ -126,7 +126,7 @@ def test_conv1d_cuda(input: Tensor, weight: Tensor) -> None:
     tensors(shape=(3, 2, 2), backend=cuda_backend),
 )
 @settings(max_examples=50)
-def test_conv1d_channel_cuda(input: Tensor, weight: Tensor) -> None:
+def test_conv1d_channel_cuda_grad(input: Tensor, weight: Tensor) -> None:
     """Gradient check for CUDA 1D convolution with multiple channels."""
     minitorch.grad_check(minitorch.Conv1dCudaFun.apply, input, weight)
 
