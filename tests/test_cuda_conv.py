@@ -46,6 +46,11 @@ def test_conv1d_cuda_simple():
     print(output_cuda.shape)
     print(output.shape)
 
+    print("STORAGES HERE")
+    print(output_cuda._tensor._storage)
+    print(output._tensor._storage)
+
+
     for i in range(output_cuda.size):
         assert_close(output_cuda[i], output[i])
 
