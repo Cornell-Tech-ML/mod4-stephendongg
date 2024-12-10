@@ -214,7 +214,7 @@ class Conv1dCudaFun(Function):
             False,
         )
         print("APPLIED?")
-        print("THIS IS WHAT OUTPUT LOOKS LIEK", output)
+        print("THIS IS WHAT OUTPUT LOOKS LIEK", output.tuple())
         ret = Tensor.make(output.tuple()[0], output.tuple()[1], output.tuple()[2], backend=cuda_backend)
         return ret
 
