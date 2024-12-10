@@ -1,12 +1,18 @@
 
 import pytest
 from hypothesis import given, settings
-from hypothesis.strategies import lists, small_floats
+from hypothesis.strategies import lists, floats
 import minitorch 
 from minitorch.tensor import Tensor
 import torch
 import numpy as np
 from .strategies import assert_close
+
+from typing import List
+
+# Define small floats for testing
+small_floats = floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False)
+
 
 
 
@@ -88,19 +94,7 @@ def test_conv1d_large_input_cuda_simple():
 )
 @settings(max_examples=50)
 @pytest.mark.task4_4b
-def test_conv1d_randomized_cuda_simple(input_data): # type: ignore
-    """Randomized test for 1D convolution comparing CUDA and Simple backend storages."""
-    weight_data = [1, -1, 2]
-
-    # Skip cases where weights are longer than the input
-    if len(weight_data) > len(input_data):
-        return
-
-    # Create tensors
-    input_cuda = Tensor.make(np.array(input_data), (1, 1, len(input_data)), backend=cuda_backend)
-    weight_cuda = Tensor.make(np.array(weight_data), (1, 1, len(weight_data)), backend
-
-def test_conv1d_randomized_cuda_simple(input_data):
+def test_conv1d_randomized_cuda_simple(input_data: List[float]): 
     """Randomized test for 1D convolution comparing CUDA and Simple backend storages."""
     weight_data = [1, -1, 2]
     if len(weight_data) > len(input_data):
