@@ -7,6 +7,7 @@ from numba import njit as _njit, prange
 from numba import cuda 
 from numba.cuda import jit as _jit
 
+import minitorch
 from minitorch.cuda_ops import THREADS_PER_BLOCK
 from .autodiff import Context
 from .tensor import Tensor
@@ -30,6 +31,8 @@ FakeCUDAKernel = Any
 # in these functions.
 
 Fn = TypeVar("Fn")
+cuda_backend = minitorch.TensorBackend(minitorch.CudaOps)
+
 
 
 def device_jit(fn: Fn, **kwargs: Any) -> Fn:
@@ -211,8 +214,8 @@ class Conv1dCudaFun(Function):
             False,
         )
         print("APPLIED?")
-
-        return output
+        ret = Tensor.make(output.tuple()[0], output.tuple()[1], output.tuple()[2], backend=cuda_backend)
+        return ret
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
