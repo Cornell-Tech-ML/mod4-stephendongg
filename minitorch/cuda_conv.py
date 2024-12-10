@@ -193,7 +193,7 @@ class Conv1dCudaFun(Function):
 
 
         # TODO: Define threads per block and blocks per grid. 
-        threadsperblock = 2 # Common choice, depends on GPU
+        threadsperblock = 32 # Common choice, depends on GPU
         blockspergrid = (width + threadsperblock - 1) // threadsperblock
 
 
@@ -205,16 +205,35 @@ class Conv1dCudaFun(Function):
         #     False,  # Reverse flag
         # )
         print()
-        print("OUTPUT:", output)
-        print("OUTPUT TUPLE:", output.tuple())
+        print("1: Initial Checks")
+        print("Input Shape:", input.shape, "Strides:", input._tensor._strides)
+        print("Weight Shape:", weight.shape, "Strides:", weight._tensor._strides)
+        print("Output Shape:", output.shape, "Strides:", output._tensor._strides)
+
+        print()
+        print("2: Final Checks")
+        print("Output Tensor Before Kernel:")
+        print(output._tensor._storage)
         tensor_conv1d[blockspergrid, threadsperblock](
             output.tuple()[0], output.tuple()[1], output.tuple()[2], width,
             input._tensor._storage, input.shape, input._tensor._strides,
             weight._tensor._storage, weight.shape, weight._tensor._strides,
             False,
         )
-        print("APPLIED?")
-        print("THIS IS WHAT OUTPUT LOOKS LIEK", output.tuple())
+        # After kernel execution
+        print("Output Tensor After Kernel:")
+        print(output._tensor._storage)
+
+        print("3. Kernel launch parameters")
+        print("CUDA Kernel Launch Parameters:")
+        print("Threads per Block:", threadsperblock)
+        print("Blocks per Grid:", blockspergrid)
+
+        print("Input Tensor Storage:")
+        print(input._tensor._storage)
+        print("Weight Tensor Storage:")
+        print(weight._tensor._storage)
+
         ret = Tensor.make(output.tuple()[0], tuple(output.tuple()[1]), tuple(output.tuple()[2]), backend=cuda_backend)
         return ret
 

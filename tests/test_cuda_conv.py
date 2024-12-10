@@ -34,21 +34,33 @@ def test_conv1d_cuda_simple():
     # weight = input.contiguous().view(1, 1, weight.size)
     
     output_cuda = minitorch.Conv1dCudaFun.apply(input_cuda, weight_cuda)
+    print()
+    print("VERIFY INPUTS:")
+    print("input_cuda:", input_cuda._tensor._storage)
+    print("weight_cuda:", weight_cuda._tensor._storage)
+    print("input_simple:", input_simple._tensor._storage)
+    print("weight_simple:", weight_simple._tensor._storage)
+
+    
+
 
     # Torch convolution
     output = minitorch.Conv1dFun.apply(input_simple, weight_simple)
+    
+    # print()
+    # print("OUTPUTS HERE:")
+    # print(output_cuda)
+    # print(output)
 
-    print("OUTPUTS HERE:")
-    print(output_cuda)
-    print(output)
+    # print()
+    # print ("SHAPES HERE")
+    # print(output_cuda.shape)
+    # print(output.shape)
 
-    print ("SHAPES HERE")
-    print(output_cuda.shape)
-    print(output.shape)
-
-    print("STORAGES HERE")
-    print(output_cuda._tensor._storage)
-    print(output._tensor._storage)
+    # print()
+    # print("STORAGES HERE")
+    # print(output_cuda._tensor._storage)
+    # print(output._tensor._storage)
 
 
     for i in range(output_cuda.size):

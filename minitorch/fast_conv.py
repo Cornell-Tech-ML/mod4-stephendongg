@@ -104,6 +104,7 @@ def _tensor_conv1d(
                 for ic in prange(in_channels):  # iterate over input channels
                     for k in prange(kw):  # iterate over kernel width
                         iw = ow - k if reverse else ow + k
+                        print("CPU: iw", iw)
                         if iw >= 0 and iw < width:
                             input_idx = (
                                 b * input_strides[0]
