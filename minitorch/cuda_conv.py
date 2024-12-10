@@ -192,15 +192,15 @@ class Conv1dCudaFun(Function):
         #     weight._tensor._storage, weight.shape, weight._tensor._strides,
         #     False,  # Reverse flag
         # )
-        print()
-        print("1: Initial Checks")
-        print("Input Shape:", input.shape, "Strides:", input._tensor._strides)
-        print("Weight Shape:", weight.shape, "Strides:", weight._tensor._strides)
-        print("Output Shape:", output.shape, "Strides:", output.strides)
+        # print()
+        # print("1: Initial Checks")
+        # print("Input Shape:", input.shape, "Strides:", input._tensor._strides)
+        # print("Weight Shape:", weight.shape, "Strides:", weight._tensor._strides)
+        # print("Output Shape:", output.shape, "Strides:", output.strides)
 
-        print()
-        print("2: Final Checks")
-        print("Output Tensor Before Kernel:")
+        # print()
+        # print("2: Final Checks")
+        # print("Output Tensor Before Kernel:")
         print(output._storage)
         tensor_conv1d[blockspergrid, threadsperblock](
             output.tuple()[0], output.tuple()[1], output.tuple()[2], width,
@@ -209,19 +209,19 @@ class Conv1dCudaFun(Function):
             False,
         )
         # After kernel execution
-        print("Output Tensor After Kernel:")
-        print(output._storage)
+        # print("Output Tensor After Kernel:")
+        # print(output._storage)
         
-        print()
-        print("3. Kernel launch parameters")
-        print("CUDA Kernel Launch Parameters:")
-        print("Threads per Block:", threadsperblock)
-        print("Blocks per Grid:", blockspergrid)
+        # print()
+        # print("3. Kernel launch parameters")
+        # print("CUDA Kernel Launch Parameters:")
+        # print("Threads per Block:", threadsperblock)
+        # print("Blocks per Grid:", blockspergrid)
 
-        print("Input Tensor Storage:")
-        print(input._tensor._storage)
-        print("Weight Tensor Storage:")
-        print(weight._tensor._storage)
+        # print("Input Tensor Storage:")
+        # print(input._tensor._storage)
+        # print("Weight Tensor Storage:")
+        # print(weight._tensor._storage)
 
         ret = Tensor.make(output.tuple()[0], tuple(output.tuple()[1]), tuple(output.tuple()[2]), backend=cuda_backend)
         return ret
