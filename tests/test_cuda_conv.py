@@ -65,18 +65,18 @@ def test_conv1d_zero_weight_cuda_simple():
 
 @pytest.mark.task4_4b
 @pytest.mark.parametrize(
-    "input_data, weight_data, expected",
+    "input_data, weight_data",
     [
         # Simple Cases
-        ([1, 2, 3, 4], [0, 0, 0], [0, 0]),  # All-zero weights
-        ([1, 2, 3, 4], [1, 0, 0], [1, 2]),  # Single active weight
-        ([1, 1, 1, 1], [1, 1, 1], [3, 3]),  # Uniform weights
-        ([1, -1, 1, -1], [1, -1, 1], [1, -1]),  # Alternating values
+        ([1, 2, 3, 4], [0, 0, 0]),  # All-zero weights
+        ([1, 2, 3, 4], [1, 0, 0]),  # Single active weight
+        ([1, 1, 1, 1], [1, 1, 1]),  # Uniform weights
+        ([1, -1, 1, -1], [1, -1, 1]),  # Alternating values
 
         # Edge Cases
-        ([0, 0, 0, 0], [0, 0, 0], [0, 0]),  # All-zero inputs and weights
-        ([1, 1, 1, 1], [1, -1, 1], [1, 1]),  # Weights sum to 1
-        ([10, 20, 30, 40], [1, 2, 3], [140, 200]),  # Larger inputs
+        ([0, 0, 0, 0], [0, 0, 0]),  # All-zero inputs and weights
+        ([1, 1, 1, 1], [1, -1, 1]),  # Weights sum to 1
+        ([10, 20, 30, 40], [1, 2, 3]),  # Larger inputs
     ],
 )
 def test_conv1d_cuda_cases(input_data: list[int], weight_data: list[int]):
