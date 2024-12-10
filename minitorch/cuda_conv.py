@@ -189,6 +189,8 @@ class Conv1dCudaFun(Function):
         # output = output.contiguous()
 
         output = TensorData([0.0 for _ in range(width)], (batch, in_channels, width)) # since its 1 dimensional! 
+
+        # print(output.strides)
         output.to_cuda_()
 
 
@@ -208,7 +210,7 @@ class Conv1dCudaFun(Function):
         print("1: Initial Checks")
         print("Input Shape:", input.shape, "Strides:", input._tensor._strides)
         print("Weight Shape:", weight.shape, "Strides:", weight._tensor._strides)
-        print("Output Shape:", output.shape, "Strides:", output._tensor._strides)
+        print("Output Shape:", output.shape, "Strides:", output.strides)
 
         print()
         print("2: Final Checks")
