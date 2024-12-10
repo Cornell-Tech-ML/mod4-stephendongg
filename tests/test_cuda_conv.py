@@ -38,11 +38,12 @@ def test_conv1d_cuda_simple():
     # Torch convolution
     output = minitorch.Conv1dFun.apply(input_simple, weight_simple)
 
+    print("OUTPUTS HERE:")
     print(output_cuda)
     print(output)
 
-    # for i in range(output_cuda.size):
-    #     assert_close(output_cuda[i], output[i])
+    for i in range(output_cuda.size):
+        assert_close(output_cuda[i], output[i])
 
 
 # @pytest.mark.task4_4b
