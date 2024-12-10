@@ -189,11 +189,22 @@ class Conv1dCudaFun(Function):
         output = input.zeros((batch, out_channels, width))
         output = output.contiguous()
 
-        input = input._tensor.to_cuda_()
-        weight = weight._tensor.to_cuda_()
+        print("INPUT")
+        print(input)
+        print("after ensuring tensor")
+        print(input._ensure_tensor(input))
+        print("one more thing")
+        print(input._tensor)
+
+        # input = input._tensor.to_cuda_()
+        # weight = weight._tensor.to_cuda_()
 
         print("PRE-LOGGING")
-        print(output)
+        # print(output)
+
+        print(output._tensor)
+
+        # print input._ensure_tensor(output)
         output = output._tensor.to_cuda_()
 
         print("POST-LOGGING")
