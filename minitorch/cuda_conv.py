@@ -196,7 +196,7 @@ class Conv1dCudaFun(Function):
 
         # TODO: Define threads per block and blocks per grid. 
         threadsperblock = 1  # Common choice, depends on GPU
-        blockspergrid = (output.size + threadsperblock - 1) // threadsperblock
+        blockspergrid = (output._tensor.size + threadsperblock - 1) // threadsperblock
 
 
         
