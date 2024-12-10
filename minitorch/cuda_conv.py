@@ -204,7 +204,7 @@ class Conv1dCudaFun(Function):
         print("OUTPUT:", output)
         print("OUTPUT TUPLE:", output.tuple())
         tensor_conv1d[blockspergrid, threadsperblock](
-            output.tuple()[0], output.shape, output._tensor._strides, width,
+            output.tuple()[0], output.tuple()[1], output.tuple()[2], width,
             input._tensor._storage, input.shape, input._tensor._strides,
             weight._tensor._storage, weight.shape, weight._tensor._strides,
             False,
