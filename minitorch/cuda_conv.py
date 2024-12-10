@@ -200,7 +200,8 @@ class Conv1dCudaFun(Function):
         #     weight._tensor._storage, weight.shape, weight._tensor._strides,
         #     False,  # Reverse flag
         # )
-
+        print(output)
+        print(output.tuple())
         tensor_conv1d[blockspergrid, threadsperblock](
             output._tensor._storage, output.shape, output._tensor._strides, width,
             input._tensor._storage, input.shape, input._tensor._strides,
