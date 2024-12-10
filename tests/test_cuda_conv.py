@@ -17,7 +17,7 @@ def test_conv1d_cuda_simple():
     weight_data = [1, 1, 4]
 
     input = minitorch.tensor(input_data, backend=cuda_backend).view(1, 1, 3)
-    weight = minitorch.tensor(weight_data, backend=cuda_backend).view(1, 1, 2)
+    weight = minitorch.tensor(weight_data, backend=cuda_backend).view(1, 1, 3)
 
 
 
