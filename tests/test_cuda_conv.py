@@ -42,6 +42,10 @@ def test_conv1d_cuda_simple():
     print(output_cuda)
     print(output)
 
+    print ("SHAPES HERE")
+    print(output_cuda.shape)
+    print(output.shape)
+
     for i in range(output_cuda.size):
         assert_close(output_cuda[i], output[i])
 
