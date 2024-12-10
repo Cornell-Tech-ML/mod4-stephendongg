@@ -110,7 +110,7 @@ def test_conv1d_simple_cuda() -> None:
     assert out[0, 0, 2] == 2 * 1 + 3 * 2
     assert out[0, 0, 3] == 3 * 1
 
-@pytest.mark.task4_1
+@pytest.mark.task4_4b
 @given(
     tensors(shape=(1, 1, 6), backend=cuda_backend),
     tensors(shape=(1, 1, 4), backend=cuda_backend),
@@ -120,7 +120,7 @@ def test_conv1d_cuda(input: Tensor, weight: Tensor) -> None:
     print(input, weight)
     minitorch.grad_check(minitorch.Conv1dCudaFun.apply, input, weight)
 
-@pytest.mark.task4_1
+@pytest.mark.task4_4b
 @given(
     tensors(shape=(2, 2, 6), backend=cuda_backend),
     tensors(shape=(3, 2, 2), backend=cuda_backend),
