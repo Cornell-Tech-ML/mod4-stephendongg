@@ -274,7 +274,7 @@ class Conv1dCudaFun(Function):
         # Convolve grad_output and weight to compute grad_input
         tensor_conv1d[blockspergrid, threadsperblock](
             grad_input.tuple()[0], grad_input.tuple()[1], grad_input.tuple()[2], grad_input.size,
-            grad_output.data, grad_output.shape, grad_output.strides,
+            grad_output._tensor._storage, grad_output._tensor.shape, grad_output._tensor.strides,
             new_weight.data, new_weight.shape, new_weight.strides,
             True,  # Reverse flag for gradient computation
         )
