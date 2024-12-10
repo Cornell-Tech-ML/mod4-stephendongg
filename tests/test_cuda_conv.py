@@ -115,7 +115,8 @@ def test_conv1d_simple_cuda() -> None:
 #     tensors(shape=(1, 1, 6), backend=cuda_backend),
 #     tensors(shape=(1, 1, 4), backend=cuda_backend),
 # )
-def test_conv1d_cuda_grad(input: Tensor, weight: Tensor) -> None:
+# def test_conv1d_cuda_grad(input: Tensor, weight: Tensor) -> None:
+def test_conv1d_cuda_grad() -> None:
     """Gradient check for CUDA 1D convolution."""
 
     input_data = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
