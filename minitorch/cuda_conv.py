@@ -20,7 +20,8 @@ from .tensor_data import (
     broadcast_index,
     index_to_position,
     to_index,
-    TensorData
+    TensorData,
+    MAX_DIMS
 )
 from .tensor_functions import Function
 
@@ -78,16 +79,22 @@ broadcast_index = device_jit(broadcast_index)
 
 THREADS_PER_BLOCK = 16
 
-
 @cuda.jit
 def _tensor_conv1d(
-    out: Storage, out_shape: Shape, out_strides: Strides, out_size: int,
-    input: Storage, input_shape: Shape, input_strides: Strides, 
-    weight: Storage, weight_shape: Shape, weight_strides: Strides,
+    out: Storage,
+    out_shape: Shape,
+    out_strides: Strides,
+    out_size: int,
+    input: Storage,
+    input_shape: Shape,
+    input_strides: Strides,
+    weight: Storage,
+    weight_shape: Shape,
+    weight_strides: Strides,
     reverse: bool,
 ) -> None:
     """
-    CUDA 1D Convolution kernel.
+    CUDA 1D Convolution kernel (refactored).
 
     Args:
         out: Output tensor storage.
@@ -102,45 +109,139 @@ def _tensor_conv1d(
         weight_strides: Strides for the weight tensor.
         reverse: Whether to reverse the kernel.
     """
+    # Extract dimensions
+    batch_, out_channels, out_width = out_shape
+    batch, in_channels, width = input_shape
+    out_channels_, in_channels_, k_width = weight_shape
 
-    # Shared memory declaration
-    shared_input = cuda.shared.array((BLOCK_DIM,), numba.float32)
-    shared_weight = cuda.shared.array((BLOCK_DIM,), numba.float32)
+    # Ensure shape consistency
+    assert (
+        batch == batch_
+        and in_channels == in_channels_
+        and out_channels == out_channels_
+    )
 
-    # Thread and block indices
-    out_idx = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    thread_idx = cuda.threadIdx.x
+    # Allocate shared memory
+    cache = cuda.shared.array((32, 32), dtype=numba.float32)
+    out_index = cuda.local.array(MAX_DIMS, dtype=numba.int32)
+    out_pos = cuda.blockIdx.x
+    pos_x = cuda.threadIdx.x
+    pos_y = cuda.threadIdx.y
 
-    if out_idx < out_size:
-        # Load data into shared memory
-        if thread_idx < input_shape[2]:
-            shared_input[thread_idx] = input[thread_idx]
-        else:
-            shared_input[thread_idx] = 0.0
+    # Process each output position
+    if out_pos < out_size:
+        to_index(out_pos, out_shape, out_index)
+        batch_index = out_index[0]
+        out_channel_index = out_index[1]
+        out_width_index = out_index[2]
 
-        if thread_idx < weight_shape[2]:
-            shared_weight[thread_idx] = weight[thread_idx]
-        else:
-            shared_weight[thread_idx] = 0.0
+        in_channel_index = pos_x
+        kernel_offset = pos_y
 
-        # Synchronize threads to ensure data is loaded
-        cuda.syncthreads()
-
-        # Compute the convolution
-        result = 0.0
-        for k in range(weight_shape[2]):
+        if in_channel_index < in_channels and kernel_offset < k_width:
+            input_val = 0.0
+            weight_val = 0.0
             if reverse:
-                weight_idx = weight_shape[2] - 1 - k
+                kernel_index = -kernel_offset
             else:
-                weight_idx = k
+                kernel_index = kernel_offset
 
-            if thread_idx + k < input_shape[2]:
-                result += shared_input[thread_idx + k] * shared_weight[weight_idx]
+            # Check valid input positions
+            if (
+                out_width_index + kernel_index >= 0
+                and out_width_index + kernel_index < width
+            ):
+                input_pos = (
+                    batch_index * input_strides[0]
+                    + in_channel_index * input_strides[1]
+                    + (out_width_index + kernel_index) * input_strides[2]
+                )
+                weight_pos = (
+                    out_channel_index * weight_strides[0]
+                    + in_channel_index * weight_strides[1]
+                    + kernel_offset * weight_strides[2]
+                )
+                input_val = input[input_pos]
+                weight_val = weight[weight_pos]
 
-        # Write result to the output tensor
-        out[out_idx] = result
+            # Store intermediate results in shared memory
+            cache[in_channel_index, kernel_index] = input_val * weight_val
+            cuda.syncthreads()
 
-tensor_conv1d = jit(_tensor_conv1d)
+            # Aggregate results
+            if in_channel_index == 0 and kernel_index == 0:
+                value = 0.0
+                for c in range(in_channels):
+                    for k in range(k_width):
+                        value += cache[c, k]
+                out[out_pos] = value
+
+
+tensor_conv1d = cuda.jit()(_tensor_conv1d)
+
+
+# @cuda.jit
+# def _tensor_conv1d(
+#     out: Storage, out_shape: Shape, out_strides: Strides, out_size: int,
+#     input: Storage, input_shape: Shape, input_strides: Strides, 
+#     weight: Storage, weight_shape: Shape, weight_strides: Strides,
+#     reverse: bool,
+# ) -> None:
+#     """
+#     CUDA 1D Convolution kernel.
+
+#     Args:
+#         out: Output tensor storage.
+#         out_shape: Shape of the output tensor.
+#         out_strides: Strides for the output tensor.
+#         out_size: Total size of the output tensor.
+#         input: Input tensor storage.
+#         input_shape: Shape of the input tensor.
+#         input_strides: Strides for the input tensor.
+#         weight: Storage for the weight tensor.
+#         weight_shape: Shape of the weight tensor.
+#         weight_strides: Strides for the weight tensor.
+#         reverse: Whether to reverse the kernel.
+#     """
+
+#     # Shared memory declaration
+#     shared_input = cuda.shared.array((BLOCK_DIM,), numba.float32)
+#     shared_weight = cuda.shared.array((BLOCK_DIM,), numba.float32)
+
+#     # Thread and block indices
+#     out_idx = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+#     thread_idx = cuda.threadIdx.x
+
+#     if out_idx < out_size:
+#         # Load data into shared memory
+#         if thread_idx < input_shape[2]:
+#             shared_input[thread_idx] = input[thread_idx]
+#         else:
+#             shared_input[thread_idx] = 0.0
+
+#         if thread_idx < weight_shape[2]:
+#             shared_weight[thread_idx] = weight[thread_idx]
+#         else:
+#             shared_weight[thread_idx] = 0.0
+
+#         # Synchronize threads to ensure data is loaded
+#         cuda.syncthreads()
+
+#         # Compute the convolution
+#         result = 0.0
+#         for k in range(weight_shape[2]):
+#             if reverse:
+#                 weight_idx = weight_shape[2] - 1 - k
+#             else:
+#                 weight_idx = k
+
+#             if thread_idx + k < input_shape[2]:
+#                 result += shared_input[thread_idx + k] * shared_weight[weight_idx]
+
+#         # Write result to the output tensor
+#         out[out_idx] = result
+
+# tensor_conv1d = jit(_tensor_conv1d)
 class Conv1dCudaFun(Function):
     @staticmethod
     def forward(ctx: Context, input: Tensor, weight: Tensor) -> Tensor:
