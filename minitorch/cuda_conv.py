@@ -191,7 +191,13 @@ class Conv1dCudaFun(Function):
 
         input = input._tensor.to_cuda_()
         weight = weight._tensor.to_cuda_()
+
+        print("PRE-LOGGING")
+        print(output)
         output = output._tensor.to_cuda_()
+
+        print("POST-LOGGING")
+        print(output)
 
 
         # TODO: Define threads per block and blocks per grid. 
