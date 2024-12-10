@@ -2,6 +2,8 @@
 from asyncio import threads
 from typing import Tuple, TypeVar, Any
 
+import math
+
 import numba 
 from numba import njit as _njit, prange
 from numba import cuda 
@@ -162,7 +164,11 @@ def _tensor_conv1d(
 
         # Compute convolution for this tile
         for k in range(BLOCK_DIM):
-            value += shared_input[thread_x, k] * shared_weight[k, thread_y]
+            iw = row - k  # Adjust index based on kernel position
+            if iw >= 0 and iw < input_shape[-1]:
+                value += shared_input[thread_x, k] * shared_weight[k, thread_y]
+
+            # value += shared_input[thread_x, k] * shared_weight[k, thread_y]
 
         # Synchronize threads before loading the next tile
         cuda.syncthreads()
@@ -222,14 +228,20 @@ class Conv1dCudaFun(Function):
 
 
         # TODO: Define threads per block and blocks per grid. 
-        threadsperblock = 1 # Common choice, depends on GPU
-        # blockspergrid = (width + threadsperblock - 1) // threadsperblock
-        threadsperblock = (BLOCK_DIM, BLOCK_DIM)
-        blockspergrid_x = (output.shape[-2] + BLOCK_DIM - 1) // BLOCK_DIM
-        blockspergrid_y = (output.shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM
+        # threadsperblock = 1 # Common choice, depends on GPU
+        # # blockspergrid = (width + threadsperblock - 1) // threadsperblock
+        # threadsperblock = (BLOCK_DIM, BLOCK_DIM)
+        # blockspergrid_x = (output.shape[-2] + BLOCK_DIM - 1) // BLOCK_DIM
+        # blockspergrid_y = (output.shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM
 
-        blockspergrid = (blockspergrid_x, blockspergrid_y, output.shape[0])
+        # blockspergrid = (blockspergrid_x, blockspergrid_y, output.shape[0])
 
+        threadsperblock = (BLOCK_DIM, 1)  # Match the BLOCK_DIM used in shared memory
+        blockspergrid = (
+            math.ceil(output.shape[-1] / threadsperblock[0]),  # Grid size in X
+            math.ceil(output.shape[-2] / threadsperblock[1]),  # Grid size in Y
+            output.shape[0],  # Grid size in Z (batch dimension)
+        )
 
 
         # # Run the CUDA 1D convolution kernel
