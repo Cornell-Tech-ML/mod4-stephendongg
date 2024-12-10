@@ -82,8 +82,6 @@ def test_conv1d_zero_weight_cuda_simple():
         ([10, 20, 30, 40], [1, 2, 3], [140, 200]),  # Larger inputs
     ],
 )
-
-@pytest.mark.task4_4b
 def test_conv1d_cuda_cases(input_data: list[int], weight_data: list[int], expected: list[int]):
     """Parameterized test for 1D convolution comparing CUDA and Simple backends."""
     input_cuda = Tensor.make(np.array(input_data), (1, 1, len(input_data)), backend=cuda_backend)
