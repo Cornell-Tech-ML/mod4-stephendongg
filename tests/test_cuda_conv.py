@@ -16,11 +16,13 @@ def test_conv1d_cuda_simple():
     input_data = [1, 1, 6]
     weight_data = [1, 1, 4]
 
-    input = minitorch.tensor(input_data, backend=cuda_backend)
-    weight = minitorch.tensor(weight_data, backend=cuda_backend)
+    input = minitorch.tensor(input_data, backend=cuda_backend).view(1, 1, 3)
+    weight = minitorch.tensor(weight_data, backend=cuda_backend).view(1, 1, 2)
 
-    input = input.contiguous().view(1, 1, input.size)  # Reshape to (batch=1, in_channels=1, width=input.size)
-    weight = input.contiguous().view(1, 1, weight.size)
+
+
+    # input = input.contiguous().view(1, 1, input.size)  # Reshape to (batch=1, in_channels=1, width=input.size)
+    # weight = input.contiguous().view(1, 1, weight.size)
     
     output_cuda = minitorch.Conv1dCudaFun.apply(input, weight)
 
