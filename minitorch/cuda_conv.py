@@ -99,6 +99,7 @@ def _tensor_conv1d(
     """
     
     if cuda.threadIdx.x == 0 and cuda.blockIdx.x == 0:  # Only one thread prints
+        print()
         print("4.1: thread and block information ")
         print("Thread ID:", cuda.threadIdx.x, cuda.threadIdx.y)
         print("Block ID:", cuda.blockIdx.x, cuda.blockIdx.y, cuda.blockIdx.z)
@@ -168,6 +169,7 @@ def _tensor_conv1d(
         )
 
         if row < out_shape[-2] and col < out_shape[-1]:
+            print()
             print("4.4 output values")
             print("Final Output Value row:", row, "col:", col, "value:", value)
 
@@ -237,7 +239,8 @@ class Conv1dCudaFun(Function):
         # After kernel execution
         print("Output Tensor After Kernel:")
         print(output._storage)
-
+        
+        print()
         print("3. Kernel launch parameters")
         print("CUDA Kernel Launch Parameters:")
         print("Threads per Block:", threadsperblock)
