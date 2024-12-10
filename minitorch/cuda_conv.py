@@ -273,7 +273,7 @@ class Conv1dCudaFun(Function):
         blockspergrid = grad_weight.size
         
         # Convolve grad_output and weight to compute grad_input
-        tensor_conv1d[blockspergrid][threadsperblock](
+        tensor_conv1d[blockspergrid, threadsperblock](
             *grad_input.tuple(),
             grad_input.size,
             *grad_output.tuple(),
