@@ -133,25 +133,43 @@ def _tensor_conv1d(
     # Loop through tiles of the kernel
     for tile in range((weight_shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM):
        
+        # # Load a tile of the input into shared memory
+        # if row < input_shape[-2] and (tile * BLOCK_DIM + thread_y) < input_shape[-1]:
+        #     shared_input[thread_x, thread_y] = input[
+        #         batch_idx * input_batch_stride
+        #         + row * input_strides[-2]
+        #         + (tile * BLOCK_DIM + thread_y) * input_strides[-1]
+        #     ]
+        # else:
+        #     shared_input[thread_x, thread_y] = 0.0
+
+        # # Load a tile of the weight into shared memory
+        # if tile * BLOCK_DIM + thread_x < weight_shape[-2] and col < weight_shape[-1]:
+        #     shared_weight[thread_x, thread_y] = weight[
+        #         batch_idx * weight_batch_stride
+        #         + (tile * BLOCK_DIM + thread_x) * weight_strides[-2]
+        #         + col * weight_strides[-1]
+        #     ]
+        # else:
+        #     shared_weight[thread_x, thread_y] = 0.0
+
+
         # Load a tile of the input into shared memory
-        if row < input_shape[-2] and (tile * BLOCK_DIM + thread_y) < input_shape[-1]:
-            shared_input[thread_x, thread_y] = input[
-                batch_idx * input_batch_stride
-                + row * input_strides[-2]
-                + (tile * BLOCK_DIM + thread_y) * input_strides[-1]
+        if thread_x < input_shape[-1]:
+            shared_input[thread_x, 0] = input[
+                batch_idx * input_strides[0]
+                + thread_x * input_strides[-1]
             ]
         else:
-            shared_input[thread_x, thread_y] = 0.0
+            shared_input[thread_x, 0] = 0.0
 
         # Load a tile of the weight into shared memory
-        if tile * BLOCK_DIM + thread_x < weight_shape[-2] and col < weight_shape[-1]:
-            shared_weight[thread_x, thread_y] = weight[
-                batch_idx * weight_batch_stride
-                + (tile * BLOCK_DIM + thread_x) * weight_strides[-2]
-                + col * weight_strides[-1]
+        if thread_x < weight_shape[-1]:
+            shared_weight[thread_x, 0] = weight[
+                thread_x * weight_strides[-1]
             ]
         else:
-            shared_weight[thread_x, thread_y] = 0.0
+            shared_weight[thread_x, 0] = 0.0
 
         # Synchronize threads to ensure tiles are loaded
         cuda.syncthreads()
@@ -163,10 +181,14 @@ def _tensor_conv1d(
             print("Shared Weight Tile[0][0]:", shared_weight[0][0])
 
         # Compute convolution for this tile
-        for k in range(BLOCK_DIM):
-            iw = row - k  # Adjust index based on kernel position
-            if iw >= 0 and iw < input_shape[-1]:
-                value += shared_input[thread_x, k] * shared_weight[k, thread_y]
+        for k in range(weight_shape[-1]):  # Iterate over kernel width
+            iw = row - k if not reverse else row + k
+            if 0 <= iw < input_shape[-1]:
+                value += shared_input[iw, 0] * shared_weight[k, 0]
+        # for k in range(BLOCK_DIM):
+        #     iw = row - k  # Adjust index based on kernel position
+        #     if iw >= 0 and iw < input_shape[-1]:
+        #         value += shared_input[thread_x, k] * shared_weight[k, thread_y]
 
             # value += shared_input[thread_x, k] * shared_weight[k, thread_y]
 
@@ -236,11 +258,11 @@ class Conv1dCudaFun(Function):
 
         # blockspergrid = (blockspergrid_x, blockspergrid_y, output.shape[0])
 
-        threadsperblock = (BLOCK_DIM, 1)  # Match the BLOCK_DIM used in shared memory
+        threadsperblock = (BLOCK_DIM, 1)  # Match shared memory block size
         blockspergrid = (
-            math.ceil(output.shape[-1] / threadsperblock[0]),  # Grid size in X
-            math.ceil(output.shape[-2] / threadsperblock[1]),  # Grid size in Y
-            output.shape[0],  # Grid size in Z (batch dimension)
+            math.ceil(width / threadsperblock[0]),
+            1,  # For 1D convolution, this remains 1
+            batch,  # Batch dimension
         )
 
 
