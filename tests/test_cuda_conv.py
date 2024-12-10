@@ -10,6 +10,7 @@ from .strategies import assert_close
 
 
 cuda_backend = minitorch.TensorBackend(minitorch.CudaOps)
+simple_backend = minitorch.TensorBackend(minitorch.SimpleOps)
 @pytest.mark.task4_4b
 def test_conv1d_cuda_simple():
 
@@ -20,18 +21,22 @@ def test_conv1d_cuda_simple():
     weight = minitorch.tensor(weight_data, backend=cuda_backend).view(1, 1, 3)
 
     
-    input = Tensor.make(np.array(input_data), (1, 1, 4), backend=cuda_backend)
-    weight = Tensor.make(np.array(weight_data), (1, 1, 3), backend=cuda_backend)
+    input_cuda = Tensor.make(np.array(input_data), (1, 1, 4), backend=cuda_backend)
+    weight_cuda = Tensor.make(np.array(weight_data), (1, 1, 3), backend=cuda_backend)
+
+    input_simple = Tensor.make(np.array(input_data), (1, 1, 4), backend=simple_backend)
+    weight_simple = Tensor.make(np.array(weight_data), (1, 1, 3), backend=simple_backend)
+    
 
 
 
     # input = input.contiguous().view(1, 1, input.size)  # Reshape to (batch=1, in_channels=1, width=input.size)
     # weight = input.contiguous().view(1, 1, weight.size)
     
-    output_cuda = minitorch.Conv1dCudaFun.apply(input, weight)
+    output_cuda = minitorch.Conv1dCudaFun.apply(input_cuda, weight_cuda)
 
     # Torch convolution
-    output = minitorch.Conv1dFun.apply(input, weight)
+    output = minitorch.Conv1dFun.apply(input_simple, weight_simple)
 
     for i in range(output_cuda.size):
         assert_close(output_cuda[i], output[i])
