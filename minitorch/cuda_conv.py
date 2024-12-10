@@ -129,8 +129,13 @@ def _tensor_conv1d(
         # Compute the convolution
         result = 0.0
         for k in range(weight_shape[2]):
+            if reverse:
+                weight_idx = weight_shape[2] - 1 - k
+            else:
+                weight_idx = k
+
             if thread_idx + k < input_shape[2]:
-                result += shared_input[thread_idx + k] * shared_weight[k]
+                result += shared_input[thread_idx + k] * shared_weight[weight_idx]
 
         # Write result to the output tensor
         out[out_idx] = result
@@ -242,15 +247,19 @@ class Conv1dCudaFun(Function):
         assert in_channels == in_channels2
 
         # Compute gradients for the weight
-        grad_weight = weight.zeros(weight.shape)
+        grad_weight = weight.zeros((in_channels, out_channels, kernel_width))
+
         new_input = input.permute(1, 0, 2)  # Rearrange dimensions for compatibility
         new_grad_output = grad_output.permute(1, 0, 2)  # Rearrange dimensions
 
+        threadsperblock = (BLOCK_DIM, BLOCK_DIM)  # Match shared memory block size
+        blockspergrid = grad_weight.size
+
         # Convolve input and grad_output to compute grad_weight
-        tensor_conv1d(
-            grad_weight.data, grad_weight.shape, grad_weight.strides, grad_weight.size,
-            new_input.data, new_input.shape, new_input.strides,
-            new_grad_output.data, new_grad_output.shape, new_grad_output.strides,
+        tensor_conv1d[blockspergrid, threadsperblock](
+            grad_weight.tuple()[0], grad_weight.tuple()[1], grad_weight.tuple()[2], grad_weight.size,
+            new_input._tensor._storage, new_input._tensor.shape, new_input._tensor.strides,
+            new_grad_output._tensor._storage, new_grad_output._tensor._shape, new_grad_output._tensor.strides,
             False,
         )
         grad_weight = grad_weight.permute(1, 0, 2)  # Rearrange dimensions back
@@ -259,9 +268,12 @@ class Conv1dCudaFun(Function):
         grad_input = input.zeros(input.shape)
         new_weight = weight.permute(1, 0, 2)  # Rearrange dimensions for compatibility
 
+        threadsperblock = (BLOCK_DIM, BLOCK_DIM)  # Match shared memory block size
+        blockspergrid = grad_weight.size
+        
         # Convolve grad_output and weight to compute grad_input
-        tensor_conv1d(
-            grad_input.data, grad_input.shape, grad_input.strides, grad_input.size,
+        tensor_conv1d[blockspergrid][threadsperblock](
+            grad_input.tuple()[0], grad_input.tuple()[1], grad_input.tuple()[2], grad_input.size,
             grad_output.data, grad_output.shape, grad_output.strides,
             new_weight.data, new_weight.shape, new_weight.strides,
             True,  # Reverse flag for gradient computation

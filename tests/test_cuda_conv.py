@@ -7,6 +7,7 @@ from minitorch.tensor import Tensor
 import torch
 import numpy as np
 from .strategies import assert_close
+from .tensor_strategies import tensors
 
 from typing import List
 
@@ -108,6 +109,26 @@ def test_conv1d_simple_cuda() -> None:
     assert out[0, 0, 1] == 1 * 1 + 2 * 2 + 3 * 3
     assert out[0, 0, 2] == 2 * 1 + 3 * 2
     assert out[0, 0, 3] == 3 * 1
+
+@pytest.mark.task4_1
+@given(
+    tensors(shape=(1, 1, 6), backend=cuda_backend),
+    tensors(shape=(1, 1, 4), backend=cuda_backend),
+)
+def test_conv1d_cuda(input: Tensor, weight: Tensor) -> None:
+    """Gradient check for CUDA 1D convolution."""
+    print(input, weight)
+    minitorch.grad_check(minitorch.Conv1dCudaFun.apply, input, weight)
+
+@pytest.mark.task4_1
+@given(
+    tensors(shape=(2, 2, 6), backend=cuda_backend),
+    tensors(shape=(3, 2, 2), backend=cuda_backend),
+)
+@settings(max_examples=50)
+def test_conv1d_channel_cuda(input: Tensor, weight: Tensor) -> None:
+    """Gradient check for CUDA 1D convolution with multiple channels."""
+    minitorch.grad_check(minitorch.Conv1dCudaFun.apply, input, weight)
 
 
 # @pytest.mark.task4_4b
