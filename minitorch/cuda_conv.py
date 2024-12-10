@@ -215,7 +215,7 @@ class Conv1dCudaFun(Function):
         print()
         print("2: Final Checks")
         print("Output Tensor Before Kernel:")
-        print(output._tensor._storage)
+        print(output._storage)
         tensor_conv1d[blockspergrid, threadsperblock](
             output.tuple()[0], output.tuple()[1], output.tuple()[2], width,
             input._tensor._storage, input.shape, input._tensor._strides,
@@ -224,7 +224,7 @@ class Conv1dCudaFun(Function):
         )
         # After kernel execution
         print("Output Tensor After Kernel:")
-        print(output._tensor._storage)
+        print(output._storage)
 
         print("3. Kernel launch parameters")
         print("CUDA Kernel Launch Parameters:")
