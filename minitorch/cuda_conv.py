@@ -105,7 +105,7 @@ def _tensor_conv1d(
         print("Block ID:", cuda.blockIdx.x, cuda.blockIdx.y, cuda.blockIdx.z)
 
     # Block size for shared memory
-    BLOCK_DIM = 32
+    BLOCK_DIM = 1
 
     # Shared memory for input and weight tiles
     shared_input = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float32)
@@ -221,7 +221,7 @@ class Conv1dCudaFun(Function):
 
 
         # TODO: Define threads per block and blocks per grid. 
-        threadsperblock = 32 # Common choice, depends on GPU
+        threadsperblock = 1 # Common choice, depends on GPU
         blockspergrid = (width + threadsperblock - 1) // threadsperblock
 
 
