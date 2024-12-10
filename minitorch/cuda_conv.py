@@ -153,11 +153,11 @@ def _tensor_conv1d(
         # Synchronize threads to ensure tiles are loaded
         cuda.syncthreads()
 
-        # 4.2 Debugging Shared Memory
-        if cuda.threadIdx.x == 0 and cuda.threadIdx.y == 0:
-            print("4.2 Shared Memory Debugging")
-            print("Shared Input Tile:", shared_input)
-            print("Shared Weight Tile:", shared_weight)
+          # Debugging Shared Memory
+        if thread_x == 0 and thread_y == 0:
+            print("4.2 Shared Memory Debugging (Tile)")
+            print("Shared Input Tile[0][0]:", shared_input[0][0])
+            print("Shared Weight Tile[0][0]:", shared_weight[0][0])
 
         # Compute convolution for this tile
         for k in range(BLOCK_DIM):
