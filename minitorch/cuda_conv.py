@@ -1,4 +1,5 @@
 # type: ignore
+from asyncio import threads
 from typing import Tuple, TypeVar, Any
 
 from numba import njit as _njit, prange
@@ -15,6 +16,7 @@ from .tensor_data import (
     broadcast_index,
     index_to_position,
     to_index,
+    TensorData
 )
 from .tensor_functions import Function
 
@@ -70,16 +72,9 @@ THREADS_PER_BLOCK = 16
 
 @cuda.jit
 def _tensor_conv1d(
-    out: Storage,
-    out_shape: Shape,
-    out_strides: Strides,
-    out_size: int,
-    input: Storage,
-    input_shape: Shape,
-    input_strides: Strides,
-    weight: Storage,
-    weight_shape: Shape,
-    weight_strides: Strides,
+    out: Storage, out_shape: Shape, out_strides: Strides, out_size: int,
+    input: Storage, input_shape: Shape, input_strides: Strides, 
+    weight: Storage, weight_shape: Shape, weight_strides: Strides,
     reverse: bool,
 ) -> None:
     """
@@ -186,29 +181,11 @@ class Conv1dCudaFun(Function):
         assert in_channels == in_channels2
 
         # Output tensor shape (assume no padding or stride)
-        output = input.zeros((batch, out_channels, width))
-        output = output.contiguous()
+        # output = input.zeros((batch, out_channels, width))
+        # output = output.contiguous()
 
-        print("INPUT")
-        print(input)
-        print("after ensuring tensor")
-        print(input._ensure_tensor(input))
-        print("one more thing")
-        print(input._tensor)
-
-        # input = input._tensor.to_cuda_()
-        # weight = weight._tensor.to_cuda_()
-
-        print("PRE-LOGGING")
-        # print(output)
-
-        print(output._tensor)
-
-        # print input._ensure_tensor(output)
-        output = output._tensor.to_cuda_()
-
-        print("POST-LOGGING")
-        print(output)
+        output = TensorData([0.0 for _ in range(width)], (batch, in_channels, width)) # since its 1 dimensional! 
+        output.to_cuda_()
 
 
         # TODO: Define threads per block and blocks per grid. 
@@ -216,13 +193,19 @@ class Conv1dCudaFun(Function):
         blockspergrid = (output._tensor.size + threadsperblock - 1) // threadsperblock
 
 
-        
-        # Run the CUDA 1D convolution kernel
-        tensor_conv1d[threadsperblock, blockspergrid](
-            output._tensor._storage, output.shape, output._tensor._strides, output.size,
+        # # Run the CUDA 1D convolution kernel
+        # tensor_conv1d[blockspergrid, threadsperblock](
+        #     output._tensor._storage, output.shape, output._tensor._strides, output.size,
+        #     input._tensor._storage, input.shape, input._tensor._strides,
+        #     weight._tensor._storage, weight.shape, weight._tensor._strides,
+        #     False,  # Reverse flag
+        # )
+
+        tensor_conv1d[blockspergrid, threadsperblock](
+            output._tensor._storage, output.shape, output._tensor._strides, width,
             input._tensor._storage, input.shape, input._tensor._strides,
             weight._tensor._storage, weight.shape, weight._tensor._strides,
-            False,  # Reverse flag
+            False,
         )
 
         return output
