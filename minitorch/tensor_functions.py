@@ -819,10 +819,13 @@ but was expecting derivative %f from central difference.
     for i, x in enumerate(vals):
         ind = x._tensor.sample()
         check = grad_central_difference(f, *vals, arg=i, ind=ind)
-        print("HERE IS x.grad: for fn", f, " :", x.grad)
+        # print("HERE IS x.grad: for fn", f, " :", x.grad)
         assert (
             x.grad is not None
         ), f"Gradient is None for function {f}, input {vals}, argument {i}, tensor: {x}"
+        print("CURRENT: ", x.grad[ind])
+        print("DESIRED: ", check)
+
         np.testing.assert_allclose(
             x.grad[ind],
             check,

@@ -35,6 +35,8 @@ The files that will be synced are:
 
         minitorch/tensor_data.py minitorch/tensor_functions.py minitorch/tensor_ops.py minitorch/operators.py minitorch/scalar.py minitorch/scalar_functions.py minitorch/module.py minitorch/autodiff.py minitorch/module.py project/run_manual.py project/run_scalar.py project/run_tensor.py minitorch/operators.py minitorch/module.py minitorch/autodiff.py minitorch/tensor.py minitorch/datasets.py minitorch/testing.py minitorch/optim.py minitorch/tensor_ops.py minitorch/fast_ops.py minitorch/cuda_ops.py project/parallel_check.py tests/test_tensor_general.py
 
+# Exta Credit (4.4b)
+[Extra Credit Colab (4.4b) Link](https://colab.research.google.com/drive/1D8qa1gvD0H_a8qGvS7icXQV1LTT_xRex?usp=sharing).
 
 # Training Logs (4.5)
 Training logs for quesiton 4.5!Please click on the arrow to expand for the trianing logs.
@@ -3959,3 +3961,4 @@ Epoch 50 loss 0.27916109709855375 train acc 16/16 valid acc 15/16
 </details>
 </pre>
 </details>
+
